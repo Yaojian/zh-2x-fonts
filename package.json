@@ -1,0 +1,10 @@
+{
+  "name": "zh-2x-fonts",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^7"
+  }
+}
