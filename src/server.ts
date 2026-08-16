@@ -33,9 +33,14 @@ export function createServer(options: ServerOptions = {}) {
       }
 
       if (url.pathname === "/api/fonts") {
-        fontsPromise ??= collectFonts({ cacheDir, source, fallbackSource });
-        const all = await fontsPromise;
-        return Response.json(all.filter((r) => r.qualifies));
+        try {
+          fontsPromise ??= collectFonts({ cacheDir, source, fallbackSource });
+          const all = await fontsPromise;
+          return Response.json(all.filter((r) => r.qualifies));
+        } catch (e) {
+          fontsPromise = null;
+          return Response.json({ error: String(e) }, { status: 500 });
+        }
       }
 
       const m = url.pathname.match(/^\/fonts\/([^/]+)\.woff2$/);

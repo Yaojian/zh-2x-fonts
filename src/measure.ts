@@ -56,6 +56,7 @@ import {
   DEFAULT_CACHE_DIR,
   DEFAULT_CONCURRENCY,
   DEFAULT_RETRIES,
+  DEFAULT_TIMEOUT_MS,
   FALLBACK_BASE_URL,
   SOURCE_BASE_URL,
 } from "./fonts.ts";
@@ -91,12 +92,10 @@ async function fetchWithFallback(urls: string[], retries: number): Promise<Respo
   for (const url of urls) {
     for (let attempt = 0; attempt < retries; attempt++) {
       try {
-        const res = await fetch(url, { signal: AbortSignal.timeout(30000) });
+        const res = await fetch(url, { signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS) });
         if (res.ok) return res;
         if (res.status === 404) break;
-      } catch {
-        // network error, retry
-      }
+      } catch {}
     }
   }
   throw new Error("all download sources failed");
@@ -106,7 +105,7 @@ export async function collectFonts(options: CollectOptions = {}): Promise<FontRe
   const cacheDir = options.cacheDir ?? process.env.ZHF_CACHE_DIR ?? DEFAULT_CACHE_DIR;
   const refresh = options.refresh ?? false;
   const retries = options.retries ?? DEFAULT_RETRIES;
-  const concurrency = options.concurrency ?? DEFAULT_CONCURRENCY;
+  const concurrency = Math.max(1, options.concurrency ?? DEFAULT_CONCURRENCY);
   const source = options.source ?? process.env.ZHF_SOURCE_URL ?? SOURCE_BASE_URL;
   const fallbackSource = options.fallbackSource ?? process.env.ZHF_FALLBACK_URL ?? FALLBACK_BASE_URL;
   mkdirSync(cacheDir, { recursive: true });

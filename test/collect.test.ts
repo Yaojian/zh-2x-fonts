@@ -91,4 +91,20 @@ describe("collectFonts", () => {
       rmSync(cacheDir, { recursive: true, force: true });
     }
   });
+
+  test("refresh re-fetches from the server and keeps the same results", async () => {
+    const cacheDir = tempCache();
+    try {
+      await collectFonts({ ...opts(), cacheDir });
+      const before = requests;
+      const results = await collectFonts({ ...opts(), cacheDir, refresh: true });
+      const after = requests;
+      expect(after - before).toBeGreaterThan(0);
+      const byAlias = Object.fromEntries(results.map((r) => [r.alias, r]));
+      expect(Object.keys(byAlias).sort()).toEqual(["fairfax-hax", "monolisa", "sinclair-ql"]);
+      expect(byAlias["fairfax-hax"]!.qualifies).toBe(true);
+    } finally {
+      rmSync(cacheDir, { recursive: true, force: true });
+    }
+  });
 });

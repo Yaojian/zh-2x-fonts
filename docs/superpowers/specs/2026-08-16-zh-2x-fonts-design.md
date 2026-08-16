@@ -37,8 +37,8 @@
 
 - **fontkit 准确**：对有字形的字符，其 `advanceWidth` 与浏览器 canvas 渲染结果完全一致（已用 M+、D2Coding、Maple、Iosevka 交叉验证）。
 - **Bun 兼容性**：Bun 的 `TextDecoder` 不支持 `x-mac-roman`，会让 fontkit 解析含该 cmap 子表的字体（如 APL2741）时抛错。需在导入 fontkit 前对全局 `TextDecoder` 打 shim：不支持编码回退到 utf-8（Unicode cmap 子表仍携带 CJK 映射，不影响判定）。
-- **实测合格字体（10 个）**：
-  - D2Coding、M PLUS 1 Code、GNU Unifont、UnifontEX；
+- **实测合格字体（11 个）**：
+  - D2Coding、M PLUS 1 Code、GNU Unifont、UnifontEX、Cilantro Code Mono；
   - Fairfax 家族 6 个变体：Fairfax / Fairfax Hax / Fairfax HD / Fairfax Hax HD / Fairfax Serif / Fairfax Serif Hax。
 - **下载失败**：多数为瞬时超时，需重试；`monolisa` 无 woff2 文件（404，商业字体），跳过并标注为排除原因。
 
@@ -53,7 +53,7 @@ src/
   cli.ts       命令行入口
   server.ts    Bun HTTP 服务（页面 + API）
 fixtures/
-  fairfax-hax.woff2   合格字体固定件（SIL OFL，附许可证文件）
+  fairfax-hax.woff2   合格字体固定件（Kreative Relay Fonts Free Use License，附许可证文件）
   sinclair-ql.woff2   不合格字体固定件（CC BY-SA 3.0，附许可证文件）
 test/
   measure.test.ts     单元测试（假 Font 对象）
@@ -75,7 +75,7 @@ docs/superpowers/specs/   本设计文档
 全英文表格输出：
 
 ```
-QUALIFYING FONTS (10)
+QUALIFYING FONTS (11)
 
 Name          Author  Website                        Programming Fonts
 D2Coding      NAVER   https://github.com/naver/...   https://www.programmingfonts.org/#d2coding
@@ -90,7 +90,7 @@ D2Coding      NAVER   https://github.com/naver/...   https://www.programmingfont
 
 - `GET /`：中文单页。
 - `GET /api/fonts`：合格字体 JSON（含 name / author / website / programmingfonts 链接）。
-- `GET /fonts/<alias>.woff2`：从 `.cache` 提供字体文件，首次按需下载（仅合格字体，共约 8.5MB）。
+- `GET /fonts/<alias>.woff2`：从 `.cache` 提供字体文件，首次按需下载。注意 `/api/fonts` 会触发 `collectFonts`，首次访问页面即需下载全部字体（约 20MB）到 `.cache`。
 - 页面为每个合格字体渲染统一的示例文本块（见下），并提供链接（网站 / programmingfonts.org 页面）。
 
 ### 示例文本块（页面展示，用户授权自设计）
@@ -117,7 +117,7 @@ D2Coding      NAVER   https://github.com/naver/...   https://www.programmingfont
 - **集成测试（提交的固定件）**：
   - `fairfax-hax.woff2` → 合格；
   - `sinclair-ql.woff2` → 不合格（无 CJK 字形覆盖）。
-- **许可证**：固定件为第三方字体，随附许可证文件（SIL OFL / CC BY-SA 3.0）。
+- **许可证**：固定件为第三方字体，随附许可证文件（Kreative Relay Fonts Free Use License / CC BY-SA 3.0）。
 
 ## 依赖与脚本
 

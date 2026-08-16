@@ -63,4 +63,40 @@ describe("server", () => {
     const res = await fetch(`${base}/nope`);
     expect(res.status).toBe(404);
   });
+
+  test("a failed /api/fonts call resets the memoized promise and recovers on retry", async () => {
+    const flakyCacheDir = mkdtempSync(join(tmpdir(), "zhf-srv-"));
+    let ok = false;
+    const flakyServer = Bun.serve({
+      port: 0,
+      fetch(req) {
+        const url = new URL(req.url);
+        if (!ok) {
+          if (url.pathname === "/fonts.json") return new Response("down", { status: 500 });
+          if (url.pathname.match(/^\/fonts\/resources\//)) return new Response("not found", { status: 404 });
+        }
+        if (url.pathname === "/fonts.json") return Response.json(fontsJson);
+        const m = url.pathname.match(/^\/fonts\/resources\/([^/]+)\/\1\.woff2$/);
+        if (m) return new Response(Bun.file(`fixtures/${m[1]}.woff2`));
+        return new Response("not found", { status: 404 });
+      },
+    });
+    const flakyUrl = `http://localhost:${flakyServer.port}`;
+    const retryApp = createServer({ port: 0, cacheDir: flakyCacheDir, source: flakyUrl, fallbackSource: flakyUrl });
+    try {
+      const retryBase = `http://localhost:${retryApp.port}`;
+      const first = await fetch(`${retryBase}/api/fonts`);
+      expect(first.status).toBe(500);
+      ok = true;
+      const second = await fetch(`${retryBase}/api/fonts`);
+      expect(second.status).toBe(200);
+      const fonts = (await second.json()) as any[];
+      expect(fonts.length).toBe(1);
+      expect(fonts[0]!.alias).toBe("fairfax-hax");
+    } finally {
+      retryApp.stop();
+      flakyServer.stop();
+      rmSync(flakyCacheDir, { recursive: true, force: true });
+    }
+  });
 });
