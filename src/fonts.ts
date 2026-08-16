@@ -8,3 +8,6 @@ export const DEFAULT_TIMEOUT_MS = 60000;
 export const DEFAULT_CACHE_DIR = ".cache";
 export const DEFAULT_RETRIES = 6;
 export const DEFAULT_CONCURRENCY = 12;
+
+export const KNOWN_FONTS_DIR = "known-fonts";
+export const KNOWN_FONTS_OVERRIDES_FILE = "known-fonts-overrides.json";

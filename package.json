@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "bun src/server.ts",
     "fonts:list": "bun src/cli.ts",
+    "fonts:fetch": "bun src/fetch.ts",
+    "known-fonts:update": "bun src/known-fonts.ts",
     "test": "bun test"
   },
   "devDependencies": {

@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { spawn } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -24,8 +24,8 @@ beforeAll(() => {
 });
 afterAll(() => server.stop());
 
-function runCli(args: string[], cacheDir: string) {
-  const child = spawn("bun", ["src/cli.ts", ...args], {
+function runFetch(cacheDir: string) {
+  const child = spawn("bun", ["src/fetch.ts"], {
     cwd: process.cwd(),
     env: {
       ...process.env,
@@ -43,31 +43,16 @@ function runCli(args: string[], cacheDir: string) {
   });
 }
 
-describe("cli", () => {
-  test("--json outputs machine-readable qualifying results", async () => {
-    const cacheDir = mkdtempSync(join(tmpdir(), "zhf-cli-"));
+describe("fonts:fetch", () => {
+  test("downloads all fonts into the cache and reports progress", async () => {
+    const cacheDir = mkdtempSync(join(tmpdir(), "zhf-fetch-"));
     try {
-      const out = await runCli(["--json"], cacheDir);
+      const out = await runFetch(cacheDir);
       expect(out.status).toBe(0);
-      const parsed = JSON.parse(out.stdout);
-      const fairfax = parsed.find((r: any) => r.alias === "fairfax-hax");
-      expect(fairfax.qualifies).toBe(true);
-      expect(fairfax.programmingFontsUrl).toBe("https://www.programmingfonts.org/#fairfax-hax");
-    } finally {
-      rmSync(cacheDir, { recursive: true, force: true });
-    }
-  });
-
-  test("table output lists qualifying fonts in English", async () => {
-    const cacheDir = mkdtempSync(join(tmpdir(), "zhf-cli-"));
-    try {
-      const out = await runCli([], cacheDir);
-      expect(out.status).toBe(0);
-      expect(out.stdout).toContain("QUALIFYING FONTS (1)");
-      expect(out.stdout).toContain("DISTRIBUTION");
-      expect(out.stdout).toContain("Fairfax Hax");
-      expect(out.stdout).toContain("https://www.programmingfonts.org/#fairfax-hax");
-      expect(out.stdout).toContain("EXCLUDED (1)");
+      expect(out.stdout).toContain("downloading 2 fonts");
+      expect(out.stdout).toContain("done: 2 downloaded, 0 failed");
+      expect(existsSync(join(cacheDir, "fairfax-hax.woff2"))).toBe(true);
+      expect(existsSync(join(cacheDir, "sinclair-ql.woff2"))).toBe(true);
     } finally {
       rmSync(cacheDir, { recursive: true, force: true });
     }

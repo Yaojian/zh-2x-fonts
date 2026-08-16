@@ -52,12 +52,12 @@ export function openFont(buffer: Uint8Array): Font {
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { createDownloader, type RawFontEntry } from "./download.ts";
+import { loadKnownFonts, type Distribution } from "./known-fonts.ts";
 import {
   DEFAULT_CACHE_DIR,
   DEFAULT_CONCURRENCY,
-  DEFAULT_RETRIES,
-  DEFAULT_TIMEOUT_MS,
-  FALLBACK_BASE_URL,
+  KNOWN_FONTS_DIR,
   SOURCE_BASE_URL,
 } from "./fonts.ts";
 
@@ -68,6 +68,8 @@ export interface FontResult extends MeasureResult {
   name: string;
   author: string;
   website: string;
+  license: string;
+  distribution: Distribution;
   status: FontStatus;
   programmingFontsUrl: string;
   woff2Url: string;
@@ -80,34 +82,21 @@ export interface CollectOptions {
   concurrency?: number;
   source?: string;
   fallbackSource?: string;
-}
-
-interface RawFontEntry {
-  name?: unknown;
-  author?: unknown;
-  website?: unknown;
-}
-
-async function fetchWithFallback(urls: string[], retries: number): Promise<Response> {
-  for (const url of urls) {
-    for (let attempt = 0; attempt < retries; attempt++) {
-      try {
-        const res = await fetch(url, { signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS) });
-        if (res.ok) return res;
-        if (res.status === 404) break;
-      } catch {}
-    }
-  }
-  throw new Error("all download sources failed");
+  knownFontsDir?: string;
 }
 
 export async function collectFonts(options: CollectOptions = {}): Promise<FontResult[]> {
   const cacheDir = options.cacheDir ?? process.env.ZHF_CACHE_DIR ?? DEFAULT_CACHE_DIR;
   const refresh = options.refresh ?? false;
-  const retries = options.retries ?? DEFAULT_RETRIES;
   const concurrency = Math.max(1, options.concurrency ?? DEFAULT_CONCURRENCY);
   const source = options.source ?? process.env.ZHF_SOURCE_URL ?? SOURCE_BASE_URL;
-  const fallbackSource = options.fallbackSource ?? process.env.ZHF_FALLBACK_URL ?? FALLBACK_BASE_URL;
+  const knownFontsDir = options.knownFontsDir ?? KNOWN_FONTS_DIR;
+  const downloader = createDownloader({
+    cacheDir,
+    retries: options.retries,
+    source: options.source,
+    fallbackSource: options.fallbackSource,
+  });
   mkdirSync(cacheDir, { recursive: true });
 
   const resultsPath = join(cacheDir, "results.json");
@@ -116,36 +105,8 @@ export async function collectFonts(options: CollectOptions = {}): Promise<FontRe
     return JSON.parse(readFileSync(resultsPath, "utf8")) as FontResult[];
   }
 
-  let fontsJson: Record<string, RawFontEntry>;
-  if (!refresh && existsSync(fontsJsonPath)) {
-    fontsJson = JSON.parse(readFileSync(fontsJsonPath, "utf8"));
-  } else {
-    const res = await fetchWithFallback(
-      [`${source}/fonts.json`, `${fallbackSource}/fonts.json`],
-      retries,
-    );
-    fontsJson = (await res.json()) as Record<string, RawFontEntry>;
-    writeFileSync(fontsJsonPath, JSON.stringify(fontsJson));
-  }
-
-  const cachedWoff2 = async (alias: string): Promise<Uint8Array | null> => {
-    const path = join(cacheDir, `${alias}.woff2`);
-    if (!refresh && existsSync(path)) return readFileSync(path);
-    try {
-      const res = await fetchWithFallback(
-        [
-          `${source}/fonts/resources/${alias}/${alias}.woff2`,
-          `${fallbackSource}/fonts/resources/${alias}/${alias}.woff2`,
-        ],
-        retries,
-      );
-      const bytes = new Uint8Array(await res.arrayBuffer());
-      writeFileSync(path, bytes);
-      return bytes;
-    } catch {
-      return null;
-    }
-  };
+  const fontsJson = await downloader.fontsJson(refresh);
+  const known = loadKnownFonts(knownFontsDir);
 
   const aliases = Object.keys(fontsJson);
   const results: FontResult[] = new Array(aliases.length);
@@ -153,15 +114,27 @@ export async function collectFonts(options: CollectOptions = {}): Promise<FontRe
 
   const measureOne = async (alias: string): Promise<FontResult> => {
     const meta = fontsJson[alias] ?? {};
-    const base = {
+    const base: Pick<
+      FontResult,
+      | "alias"
+      | "name"
+      | "author"
+      | "website"
+      | "license"
+      | "distribution"
+      | "programmingFontsUrl"
+      | "woff2Url"
+    > = {
       alias,
       name: String(meta.name ?? alias),
       author: String(meta.author ?? ""),
       website: String(meta.website ?? ""),
+      license: String(meta.license ?? "unknown"),
+      distribution: known[alias]?.distribution ?? "unknown",
       programmingFontsUrl: `https://www.programmingfonts.org/#${alias}`,
       woff2Url: `${source}/fonts/resources/${alias}/${alias}.woff2`,
     };
-    const buffer = await cachedWoff2(alias);
+    const buffer = await downloader.woff2(alias, refresh);
     if (!buffer) {
       return { ...base, en: 0, cn: 0, missing: [], qualifies: false, status: "download-failed" };
     }

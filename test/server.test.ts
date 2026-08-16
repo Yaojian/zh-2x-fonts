@@ -50,6 +50,7 @@ describe("server", () => {
     const fonts = (await res.json()) as any[];
     expect(fonts.length).toBe(1);
     expect(fonts[0]!.alias).toBe("fairfax-hax");
+    expect(["free", "commercial", "unknown"]).toContain(fonts[0]!.distribution);
   });
 
   test("serves cached woff2 files", async () => {

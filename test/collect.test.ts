@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { collectFonts } from "../src/measure.ts";
@@ -12,9 +12,11 @@ const fontsJson = {
 
 let server: ReturnType<typeof Bun.serve>;
 let requests = 0;
+let knownDir: string;
 const failOnce = new Set<string>();
 
 beforeAll(async () => {
+  knownDir = mkdtempSync(join(tmpdir(), "zhf-known-"));
   server = Bun.serve({
     port: 0,
     async fetch(req) {
@@ -37,12 +39,16 @@ beforeAll(async () => {
   });
 });
 
-afterAll(() => server.stop());
+afterAll(() => {
+  server.stop();
+  rmSync(knownDir, { recursive: true, force: true });
+});
 
 const opts = () => ({
   source: `http://localhost:${server.port}`,
   fallbackSource: `http://localhost:${server.port}`,
   retries: 2,
+  knownFontsDir: knownDir,
 });
 
 function tempCache(): string {
@@ -62,8 +68,29 @@ describe("collectFonts", () => {
       expect(byAlias["sinclair-ql"]!.status).toBe("ok");
       expect(byAlias["monolisa"]!.status).toBe("download-failed");
       expect(byAlias["monolisa"]!.programmingFontsUrl).toBe("https://www.programmingfonts.org/#monolisa");
+      expect(byAlias["fairfax-hax"]!.license).toBe("unknown");
+      expect(byAlias["fairfax-hax"]!.distribution).toBe("unknown");
     } finally {
       rmSync(cacheDir, { recursive: true, force: true });
+    }
+  });
+
+  test("annotates distribution from known-fonts files", async () => {
+    const cacheDir = tempCache();
+    const known = mkdtempSync(join(tmpdir(), "zhf-known-"));
+    try {
+      mkdirSync(known, { recursive: true });
+      writeFileSync(
+        join(known, "fairfax-hax.json"),
+        JSON.stringify({ name: "Fairfax Hax", license: "SIL OFL", distribution: "free", source: "https://x" }),
+      );
+      const results = await collectFonts({ ...opts(), cacheDir, knownFontsDir: known });
+      const byAlias = Object.fromEntries(results.map((r) => [r.alias, r]));
+      expect(byAlias["fairfax-hax"]!.distribution).toBe("free");
+      expect(byAlias["sinclair-ql"]!.distribution).toBe("unknown");
+    } finally {
+      rmSync(cacheDir, { recursive: true, force: true });
+      rmSync(known, { recursive: true, force: true });
     }
   });
 

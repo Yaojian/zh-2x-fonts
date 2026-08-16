@@ -13,8 +13,9 @@ if (json) {
   const qualifying = results.filter((r) => r.qualifies);
   console.log(`QUALIFYING FONTS (${qualifying.length})`);
   console.log("");
-  const header = ["NAME", "AUTHOR", "WEBSITE", "PROGRAMMING FONTS"];
-  const rows = qualifying.map((r) => [r.name, r.author, r.website, r.programmingFontsUrl]);
+  const dist = (d: string | undefined) => (d === "free" ? "FREE" : d === "commercial" ? "COMMERCIAL" : "UNKNOWN");
+  const header = ["NAME", "AUTHOR", "DISTRIBUTION", "WEBSITE", "PROGRAMMING FONTS"];
+  const rows = qualifying.map((r) => [r.name, r.author, dist(r.distribution), r.website, r.programmingFontsUrl]);
   const widths = header.map((h, i) => Math.max(h.length, ...rows.map((row) => row[i]!.length)));
   const line = (cells: string[]) => cells.map((c, i) => c.padEnd(widths[i]!)).join("  ").trimEnd();
   console.log(line(header));
