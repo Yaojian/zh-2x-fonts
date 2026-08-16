@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>中英倍宽字体</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 60rem; margin: 0 auto; padding: 2rem 1rem; color: #1a1a1a; }
+  h1 { font-size: 1.5rem; }
+  .card { border: 1px solid #ddd; border-radius: 8px; padding: 1rem 1.5rem; margin-bottom: 1rem; }
+  .card h2 { margin: 0 0 .25rem; font-size: 1.1rem; }
+  .meta { color: #666; font-size: .85rem; margin-bottom: .75rem; }
+  .sample { font-size: 16px; line-height: 1.6; white-space: pre; overflow-x: auto; background: #f6f6f6; padding: .75rem; border-radius: 6px; }
+  .links a { margin-right: 1rem; }
+  #status { color: #666; }
+</style>
+</head>
+<body>
+<h1>中英倍宽字体</h1>
+<p>以下字体满足「一个中文字符的宽度等于两个英文字符」，适合用 Web 设计工具排版 TUI 界面。</p>
+<div id="status">正在测量字体…首次运行需下载字体文件（约 20MB），请稍候。</div>
+<div id="list"></div>
+<script>
+(async () => {
+  const list = document.getElementById("list");
+  const status = document.getElementById("status");
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const sample = "你好，世界！Hello, World! 123\n" +
+    "一二三四五六七八九 ABCDEFGHIJK\n" +
+    "┌─ 状态：运行中 ▓▓▓░░ 80% ─────┐\n" +
+    "│ 你好 World 123 !@#$%^&*()  │\n" +
+    "└────────────────────────────┘";
+  try {
+    const res = await fetch("/api/fonts");
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const fonts = await res.json();
+    status.textContent = "共 " + fonts.length + " 个字体符合条件。";
+    const style = document.createElement("style");
+    style.textContent = fonts
+      .map((f) => "@font-face{font-family:" + f.alias + ";src:url('/fonts/" + f.alias + ".woff2');}")
+      .join("\n");
+    document.head.appendChild(style);
+    await document.fonts.ready;
+    for (const f of fonts) {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML =
+        "<h2>" + esc(f.name) + "</h2>" +
+        "<div class='meta'>" + esc(f.author) + " · " + esc(f.website) + "</div>" +
+        "<div class='sample' style='font-family:" + esc(f.alias) + ",monospace'>" + esc(sample) + "</div>" +
+        "<div class='links'>" +
+        "<a href='" + esc(f.programmingFontsUrl) + "' target='_blank' rel='noopener'>Programming Fonts</a>" +
+        "<a href='" + esc(f.website) + "' target='_blank' rel='noopener'>官方网站</a>" +
+        "</div>";
+      list.appendChild(card);
+    }
+  } catch (e) {
+    status.textContent = "加载失败：" + e.message;
+  }
+})();
+</script>
+</body>
+</html>
