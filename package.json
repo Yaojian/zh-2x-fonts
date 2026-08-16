@@ -1,8 +1,12 @@
 {
   "name": "zh-2x-fonts",
-  "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "dev": "bun src/server.ts",
+    "fonts:list": "bun src/cli.ts",
+    "test": "bun test"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "typescript": "^7"
