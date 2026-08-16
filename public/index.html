@@ -29,9 +29,9 @@
   const status = document.getElementById("status");
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const sample = "你好，世界！Hello, World! 123\n" +
+  const sample = "你好，世界！ Hello, World! 123\n" +
     "一二三四五六七八九 ABCDEFGHIJK\n" +
-    "┌─ 状态：运行中 ▓▓▓░░ 80% ─────┐\n" +
+    "┌─ 状态：运行中 ▓▓▓░░ 80% ───┐\n" +
     "│ 你好 World 123 !@#$%^&*()  │\n" +
     "└────────────────────────────┘";
   try {
