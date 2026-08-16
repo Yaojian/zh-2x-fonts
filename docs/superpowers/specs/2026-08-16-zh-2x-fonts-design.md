@@ -18,7 +18,7 @@
 
 - 字体元数据：`https://www.programmingfonts.org/fonts.json`（189 个字体，键为 alias，含 `name` / `author` / `website` / `variants` 等字段）。
 - 字体文件：`https://www.programmingfonts.org/fonts/resources/<alias>/<alias>.woff2`（regular 变体）。
-- 约束：本机 GitHub 不可达，以该站点为唯一来源；站点网络较慢，下载需重试 + 本地缓存。
+- 约束：本机直连 GitHub 不可达；若设置 `HTTP_PROXY` / `HTTPS_PROXY` 环境变量，Bun `fetch` 会自动生效，可经代理访问 GitHub（已验证 `127.0.0.1:6616` 可通）。以 programmingfonts.org 为主来源，GitHub raw（`raw.githubusercontent.com/braver/programmingfonts/gh-pages/…`）作为代理可用时的备用源。网络较慢，下载需重试 + 本地缓存。
 
 ## 判定规则（核心）
 
@@ -108,7 +108,7 @@ D2Coding      NAVER   https://github.com/naver/...   https://www.programmingfont
 ### 错误处理
 
 - 下载失败 / 解析失败：跳过该项并在结果中标注，CLI 与 API 均展示排除原因。
-- 首次运行需下载全部字体（约 100MB），耗时数分钟；此后缓存命中，秒级完成。
+- 首次运行需下载全部字体（实测合计约 20MB：中位数 38KB，绝大多数 <100KB，CJK 大字体 0.5–2MB），耗时约 1–2 分钟；此后缓存命中，秒级完成。
 - 单一字体下载失败不影响整体结果。
 
 ## 测试策略
