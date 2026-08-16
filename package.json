@@ -3,9 +3,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun src/server.ts",
-    "fonts:list": "bun src/cli.ts",
-    "fonts:fetch": "bun src/fetch.ts",
+    "show": "bun src/server.ts",
+    "list": "bun src/cli.ts",
+    "fetch": "bun src/fetch.ts",
     "known-fonts:update": "bun src/known-fonts.ts",
     "test": "bun test"
   },

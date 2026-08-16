@@ -33,7 +33,7 @@ bun install
 列出所有符合中英倍宽条件的字体及其链接：
 
 ```bash
-bun run fonts:list
+bun run list
 ```
 
 输出示例：
@@ -57,13 +57,13 @@ D2Coding            Yong-Rak...   FREE          https://github.com/naver/...   h
 
 ## 预下载全部字体
 
-`fonts:list` 与网页在首次运行时都会自动下载字体。也可以先手动预下载全部字体到本地缓存：
+`list` 与网页在首次运行时都会自动下载字体。也可以先手动预下载全部字体到本地缓存：
 
 ```bash
-bun run fonts:fetch
+bun run fetch
 ```
 
-- 只下载、不测量，完成后 `fonts:list` / `dev` 全部走本地文件，离线、秒级。
+- 只下载、不测量，完成后 `list` / `show` 全部走本地文件，离线、秒级。
 - 字体下载到缓存目录（默认 `.cache/`，`.gitignore` 已忽略），**不提交进 git**，因此不存在再分发问题。
 - 失败项会列出（如 `monolisa` 为商业字体，源站不提供 woff2）。
 
@@ -94,7 +94,7 @@ bun run known-fonts:update
 启动本地服务器，在浏览器中直观对比每个合格字体的视觉效果：
 
 ```bash
-bun run dev
+bun run show
 ```
 
 然后打开 http://localhost:3000 。
@@ -118,7 +118,7 @@ bun run dev
 ```bash
 export HTTP_PROXY=http://127.0.0.1:6616
 export HTTPS_PROXY=http://127.0.0.1:6616
-bun run fonts:list
+bun run list
 ```
 
 ## 当前符合条件字体（11 个）
@@ -130,7 +130,7 @@ bun run fonts:list
 - UnifontEX
 - Fairfax / Fairfax Hax / Fairfax HD / Fairfax Hax HD / Fairfax Serif / Fairfax Serif Hax
 
-> 注：若某字体文件下载失败（网络波动），`fonts:list` 会将其归入 `download failed` 而非合格列表；重跑或使用 `--refresh` 即可。`monolisa` 为商业字体，源站不提供 woff2，属正常排除。
+> 注：若某字体文件下载失败（网络波动），`list` 会将其归入 `download failed` 而非合格列表；重跑或使用 `--refresh` 即可。`monolisa` 为商业字体，源站不提供 woff2，属正常排除。
 
 ## 测试
 

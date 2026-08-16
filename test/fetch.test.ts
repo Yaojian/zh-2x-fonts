@@ -43,7 +43,7 @@ function runFetch(cacheDir: string) {
   });
 }
 
-describe("fonts:fetch", () => {
+describe("fetch", () => {
   test("downloads all fonts into the cache and reports progress", async () => {
     const cacheDir = mkdtempSync(join(tmpdir(), "zhf-fetch-"));
     try {
